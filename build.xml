@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+MIT License
+
+Copyright (c) 2018 Gymnazium Nad Aleji
+Copyright (c) 2018 Vojtech Horky
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+-->
+<project basedir="." name="GIF encoder" default="main">
+    <property file="local-settings.ini" />
+
+    <property environment="env" />
+
+    <property name="junit.jar.path" value="lib/junit-4.11.jar" />
+    <property name="hamcrest.jar.path" value="lib/hamcrest-core.jar" />
+
+    <taskdef resource="com/puppycrawl/tools/checkstyle/ant/checkstyle-ant-task.properties"
+        classpath="lib/checkstyle-8.10-all.jar"/>
+
+    <target name="main" depends="make-jars" description="Default target: create runnable JARs.">
+    </target>
+
+    <target name="compile-lib" description="Compile GIF encoding Java library.">
+        <mkdir dir="out/classes-image" />
+        <javac destdir="out/classes-image" debug="true" includeantruntime="false">
+            <src path="src/java-image" />
+            <compilerarg value="-Xlint:all" />
+        </javac>
+    </target>
+
+    <target name="compile-demos" description="Compile the demo code." depends="compile-lib">
+        <mkdir dir="out/classes-demo" />
+        <javac destdir="out/classes-demo" debug="true" includeantruntime="false">
+            <src path="src/java-demo" />
+            <classpath>
+                <pathelement path="out/classes-image" />
+            </classpath>
+            <compilerarg value="-Xlint:all" />
+        </javac>
+    </target>
+
+    <target name="make-jars" description="Build launchable JARs" depends="compile-lib,compile-demos">
+        <mkdir dir="out/jars" />
+        <jar destfile="out/jars/convertor.jar">
+            <fileset dir="out/classes-demo" includes="**/*.class" />
+            <fileset dir="out/classes-image" includes="**/*.class" />
+            <manifest>
+                <attribute name="Main-Class" value="cz.alisma.alej.prog.image.gif.Convertor" />
+            </manifest>
+        </jar>
+
+        <jar destfile="out/jars/comparator.jar">
+            <fileset dir="out/classes-demo" includes="**/*.class" />
+            <fileset dir="out/classes-image" includes="**/*.class" />
+            <manifest>
+                <attribute name="Main-Class" value="cz.alisma.alej.prog.image.gif.Comparator" />
+            </manifest>
+        </jar>
+    </target>
+
+    <target name="compile-test" description="Compile all the test code." depends="compile-lib">
+        <mkdir dir="out/classes-test" />
+        <javac destdir="out/classes-test" debug="true" includeantruntime="false">
+            <src path="src/test-java-image" />
+            <classpath>
+                <pathelement path="out/classes-image" />
+                <pathelement path="${junit.jar.path}" />
+                <pathelement path="${hamcrest.jar.path}" />
+            </classpath>
+            <compilerarg value="-Xlint:all" />
+        </javac>
+    </target>
+
+    <target name="test" depends="compile-lib,compile-test" description="Run JUnit tests, generate HTML report.">
+        <mkdir dir="out/test-results" />
+        <junit printsummary="withOutAndErr" failureproperty="junit.failed" haltonfailure="no">
+            <classpath>
+                <pathelement path="${junit.jar.path}" />
+                <pathelement path="${hamcrest.jar.path}" />
+                <pathelement path="out/classes-test" />
+                <pathelement path="out/classes-image" />
+            </classpath>
+
+            <assertions>
+                <enable />
+            </assertions>
+
+            <formatter type="plain" />
+            <formatter type="xml" />
+
+            <batchtest fork="yes" todir="out/test-results">
+                <fileset dir="out/classes-test">
+                    <include name="**/*Test.class" />
+                </fileset>
+            </batchtest>
+        </junit>
+        <junitreport todir="out/test-results">
+            <fileset dir="out/test-results">
+                <include name="TEST-*.xml" />
+            </fileset>
+            <report format="frames" todir="out/test-results/html" />
+        </junitreport>
+
+        <echo message="HTML results are in out/test-results/html/index.html" />
+
+        <fail message="JUnit test(s) failed." if="junit.failed" />
+    </target>
+
+    <target name="javadoc">
+        <mkdir dir="out/javadoc" />
+        <javadoc destdir="out/javadoc" author="true" version="true" use="true" failonerror="true" overview="src/java-image/overview.html" windowtitle="${ant.project.name}">
+            <packageset dir="src/java-image" defaultexcludes="yes" />
+            <doctitle>
+                &lt;h1&gt;GIF encoder library&lt;/h1&gt;
+            </doctitle>
+            <bottom>
+                &lt;i&gt;Copyright &amp;copy; 2018 GNA --&lt;/i&gt;
+            </bottom>
+        </javadoc>
+        <echo message="JavaDoc is in out/javadoc/index.html" />
+    </target>
+
+    <target name="checkstyle">
+        <checkstyle config="checkstyle.xml">
+            <fileset dir="src/java-image" includes="**/*.java" />
+            <fileset dir="src/java-demo" includes="**/*.java" />
+            <formatter type="plain" />
+        </checkstyle>
+    </target>
+
+    <target name="demo" depends="make-jars" description="Run simple demo.">
+        <java jar="out/jars/comparator.jar" fork="true" failonerror="true">
+            <arg value="images/flag.gif" />
+        </java>
+    </target>
+
+    <target name="gate" description="Pre-integration checks.">
+        <antcall target="test" />
+        <antcall target="javadoc" />
+        <antcall target="checkstyle" />
+    </target>
+
+    <target name="clean" description="Remove generated files.">
+        <delete dir="out/" />
+    </target>
+</project>
