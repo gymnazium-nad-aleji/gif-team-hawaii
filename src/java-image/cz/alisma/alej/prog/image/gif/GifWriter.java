@@ -72,9 +72,25 @@ public class GifWriter {
         ImageDesriptorBuilder imageDescriptor
                 = new ImageDesriptorBuilder(image.getWidth(), image.getHeight());
         output.write(imageDescriptor.get());
-
-        // output.write(compressedIndexStream);
+        
+        // Begin our code       
+        int[] colorIndexStream = createColorIndexStream(image, colorMap);
+        BlockCreator blockCreator = new BlockCreator();
+        BitPacker bitPacker = new BitPacker(blockCreator);
+        
+        LzwCompressor.compress(colorIndexStream, bitPacker);
+        
+        byte[] compressedIndexStream = blockCreator.get();
+        // End our code
+        
+        output.write(compressedIndexStream);
 
         output.write(GIF_TERMINATOR);
     }
+
+	private static int[] createColorIndexStream(RasterImage image, ColorMap colorMap) {
+		// TODO Auto-generated method stub
+		int[] indexStream = new int[0];
+		return indexStream;
+	}
 }
