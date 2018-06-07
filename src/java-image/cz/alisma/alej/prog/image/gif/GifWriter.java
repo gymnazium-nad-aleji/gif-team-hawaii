@@ -89,8 +89,16 @@ public class GifWriter {
     }
 
 	private static int[] createColorIndexStream(RasterImage image, ColorMap colorMap) {
-		// TODO Auto-generated method stub
-		int[] indexStream = new int[0];
+		int height = image.getHeight();
+		int width = image.getWidth();
+		int[] indexStream = new int[height * width];
+		int colorCounter = 0;
+		for (int y = 0; y < width; y += 1) {
+			for (int x = 0; x < height; x += 1) {
+				indexStream[colorCounter] = colorMap.getColorIndex(image.getColor(x, y));
+				colorCounter += 1;
+			}
+		}
 		return indexStream;
 	}
 }
