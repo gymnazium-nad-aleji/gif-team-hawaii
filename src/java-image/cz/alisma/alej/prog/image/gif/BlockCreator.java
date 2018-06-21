@@ -22,6 +22,11 @@ public class BlockCreator implements ByteTransformer{
 	}
 
 	public byte[] get() {
+		finalCode.add(semiProduct.size());
+		for(Integer c : semiProduct) {
+			finalCode.add(c);
+		}
+		finalCode.add(0);
 		byte[] result = new byte[finalCode.size()];
 		for(int i = 0; i < finalCode.size(); i++) {
 			result[i] = (byte)(int)finalCode.get(i);
