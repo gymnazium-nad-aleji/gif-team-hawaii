@@ -78,7 +78,7 @@ public class GifWriter {
         BlockCreator blockCreator = new BlockCreator();
         BitPacker bitPacker = new BitPacker(blockCreator);
         
-        LzwCompressor.compress(colorIndexStream, bitPacker);
+        LzwCompressor.compress(colorIndexStream, bitPacker, colorCount);
         
         byte[] compressedIndexStream = blockCreator.get();
         // End our code
